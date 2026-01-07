@@ -1,34 +1,77 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
-    <title>My Sheets CMS</title>
-    <style>
-        body { font-family: sans-serif; max-width: 800px; margin: auto; padding: 20px; }
-        .post { border-bottom: 1px solid #ccc; padding: 10px 0; }
-    </style>
+    <meta charset="UTF-8">
+    <title id="site-title">Memuat...</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 </head>
-<body>
-    <h1>Blog Saya</h1>
-    <div id="content">Memuat data...</div>
+<body class="bg-gray-50 text-gray-800">
+    <div id="app">
+        <nav class="bg-blue-600 p-4 text-white shadow-lg">
+            <div class="container mx-auto flex justify-between">
+                <h1 class="text-2xl font-bold">MySheet CMS</h1>
+                <button @click="view = 'admin'" class="bg-blue-800 px-4 py-1 rounded text-sm">Admin Dashboard</button>
+            </div>
+        </nav>
+
+        <main v-if="view === 'home'" class="container mx-auto p-6">
+            <div class="grid md:grid-cols-2 gap-6">
+                <div v-for="post in posts" :key="post.id" class="bg-white rounded-lg shadow p-4">
+                    <img :src="post.image_url" class="w-full h-48 object-cover rounded">
+                    <h2 class="text-xl font-bold mt-4">{{ post.title }}</h2>
+                    <p class="text-gray-600 mt-2">{{ post.content.substring(0, 100) }}...</p>
+                    <button class="mt-4 text-blue-600 font-semibold">Baca Selengkapnya</button>
+                </div>
+            </div>
+        </main>
+
+        <div v-if="view === 'admin'" class="container mx-auto p-6">
+            <div class="bg-white p-6 rounded-lg shadow-md max-w-lg mx-auto">
+                <h2 class="text-2xl font-bold mb-4">Tambah Postingan Baru</h2>
+                <input v-model="newPost.title" placeholder="Judul" class="w-full border p-2 mb-2 rounded">
+                <input v-model="newPost.image_url" placeholder="URL Gambar" class="w-full border p-2 mb-2 rounded">
+                <textarea v-model="newPost.content" placeholder="Konten" class="w-full border p-2 mb-2 rounded h-32"></textarea>
+                <button @click="submitPost" class="bg-green-600 text-white px-6 py-2 rounded">Publish</button>
+                <button @click="view = 'home'" class="ml-2 text-gray-500">Batal</button>
+            </div>
+        </div>
+    </div>
 
     <script>
-        const apiURL = "https://script.google.com/macros/s/AKfycby3sX-_3EEYz3GPv8xCiADr5IEdTw1xDYxLeQoZioKnvvMzIIAc6ACXFmZkaNFiRhRecg/exec";
+        const API_URL = 'https://script.google.com/macros/s/AKfycbwNH2IENfAXQxKe-u3TpHvlut_NJAF5jz5pEVrQEJwhLlA7HbOtKEJDKBc6e-sv4brneQ/exec';
 
-        async function loadData() {
-            const response = await fetch(apiURL);
-            const data = await response.json();
-            let html = '';
-            data.forEach(post => {
-                html += `
-                    <div class="post">
-                        <h2>${post.judul}</h2>
-                        <small>${post.tanggal} | ${post.kategori}</small>
-                        <p>${post.konten}</p>
-                    </div>`;
-            });
-            document.getElementById('content').innerHTML = html;
-        }
-        loadData();
+        const { createApp } = Vue;
+        createApp({
+            data() {
+                return {
+                    view: 'home',
+                    posts: [],
+                    newPost: { title: '', content: '', image_url: '', slug: '' }
+                }
+            },
+            methods: {
+                async function fetchPosts() {
+                     // Tambahkan '?action=getPosts' agar script tahu apa yang harus diambil
+                    const res = await fetch(API_URL + '?action=getPosts'); 
+                    const data = await res.json();
+                    this.posts = data;
+                },
+                async submitPost() {
+                    this.newPost.slug = this.newPost.title.toLowerCase().replace(/ /g, '-');
+                    await fetch(API_URL, {
+                        method: 'POST',
+                        body: JSON.stringify(this.newPost)
+                    });
+                    alert('Postingan berhasil ditambah!');
+                    this.view = 'home';
+                    this.fetchPosts();
+                }
+            },
+            mounted() {
+                this.fetchPosts();
+            }
+        }).mount('#app')
     </script>
 </body>
 </html>
